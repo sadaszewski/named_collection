@@ -27,5 +27,5 @@ Alternative construction:
 ```python
 from named_collection import nc
 nc = nc.from_interleaved
-x=nc('a', 1, 'b', 2, 'c', nc('d', 3, 'e', 4, 'f', 5))
+x = nc('a', 1, 'b', 2, 'c', nc('d', 3, 'e', 4, 'f', 5))
 ```
