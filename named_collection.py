@@ -15,6 +15,15 @@ def _either_positional_or_keyword_args(*args, **kwargs):
 
 
 class NamedCollection(object):
+    @staticmethod
+    def from_interleaved(*args):
+        if len(args) % 2 != 0:
+            raise ValueError('Even number of arguments is required')
+        # args = list(args)
+        args = [(args[i], args[i + 1]) \
+            for i in range(0, len(args), 2)]
+        return NamedCollection(*args)
+
     def __init__(self, *args):
         d = self.__dict__
         item_keys = d['item-keys'] = []
@@ -322,7 +331,7 @@ class NamedCollection(object):
         item_values = d['item-values']
         return iter(item_values)
 
-_nc = NamedCollection
+nc = _nc = NamedCollection
 
 #----------------------------------------------------------------
 
