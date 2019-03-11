@@ -21,3 +21,11 @@ pred = data.apply(test=lambda a: clf.pred(a))
 print(pred.train.test)
 print(pred.test)
 ```
+
+Alternative construction:
+
+```python
+from named_collection import nc
+nc = nc.from_interlaved
+x=nc('a', 1, 'b', 2, 'c', nc('d', 3, 'e', 4, 'f', 5))
+```
