@@ -6,7 +6,7 @@ Usage example:
 ```python
 from named_collection import NamedCollection as nc
 
-data = nc(*(release, DatasetsDownload(data_release=release) \
+data = nc(*((release, DatasetsDownload(data_release=release)) \
   for release in ['train', 'test']))
 data = data.apply(lambda a: \
   a.get_data('baseline', 'labs', 'vitals'))
