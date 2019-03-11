@@ -408,7 +408,7 @@ NamedCollection or apply functions to values based on keys
 specified in **kwargs. Values are not modified in-place. A new
 copy is returned. '''
 
-_nc.raw_apply.__dic__ = '''\
+_nc.raw_apply.__doc__ = '''\
 Same as apply() but values of type NamedCollection are not
 processed recursively.'''
 
