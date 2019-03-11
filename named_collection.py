@@ -8,6 +8,9 @@
 #
 
 
+from functools import reduce
+
+
 def _either_positional_or_keyword_args(*args, **kwargs):
     if (len(args) > 0 and len(kwargs) > 0) or \
         (len(args) == 0 and len(kwargs) == 0):
@@ -22,6 +25,13 @@ class NamedCollection(object):
         # args = list(args)
         args = [(args[i], args[i + 1]) \
             for i in range(0, len(args), 2)]
+        return NamedCollection(*args)
+
+    @staticmethod
+    def from_dicts(*args):
+        args = [ list(a.items()) \
+            for a in args ]
+        args = reduce(list.__add__, args)
         return NamedCollection(*args)
 
     def __init__(self, *args):
