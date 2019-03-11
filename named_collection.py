@@ -7,6 +7,13 @@
 # License: BSD 2-clause "Simplified" License
 #
 
+
+def _either_positional_or_keyword_args(*args, **kwargs):
+    if (len(args) > 0 and len(kwargs) > 0) or \
+        (len(args) == 0 and len(kwargs) == 0):
+        raise ValueError('Either positional or keyword arguments must be used')
+
+
 class NamedCollection(object):
     def __init__(self, *args):
         d = self.__dict__
@@ -260,13 +267,13 @@ class NamedCollection(object):
             res._update(a)
         return res
 
-    def _apply_pipeline(self, *args):
+    def _apply_pipeline(self, *args, raw=False):
         d = self.__dict__
         item_values = d['item-values']
         item_keys = d['item-keys']
         res = []
         for i, val in enumerate(item_values):
-            if isinstance(val, NamedCollection):
+            if not raw and isinstance(val, NamedCollection):
                 val = val._apply_pipeline(*args)
             else:
                 for fn in args:
@@ -275,14 +282,17 @@ class NamedCollection(object):
         res = NamedCollection(*res)
         return res
 
-    def _apply_selective(self, **kwargs):
+    def _apply_selective(self, *args, **kwargs):
+        raw = args[0] \
+            if len(args) > 0 \
+            else False
         d = self.__dict__
         item_values = d['item-values']
         item_keys = d['item-keys']
         res = []
         for i, val in enumerate(item_values):
             key = item_keys[i]
-            if isinstance(val, NamedCollection):
+            if not raw and isinstance(val, NamedCollection):
                 val = val._apply_selective(**kwargs)
             else:
                 if key in kwargs:
@@ -293,14 +303,19 @@ class NamedCollection(object):
         return res
 
     def apply(self, *args, **kwargs):
-        if (len(args) > 0 and len(kwargs) > 0) or \
-            (len(args) == 0 and len(kwargs) == 0):
-            raise ValueError('Either positional or keyword arguments must be used')
+        _either_positional_or_keyword_args(*args, **kwargs)
 
         if len(args) > 0:
             return self._apply_pipeline(*args)
         else:
             return self._apply_selective(**kwargs)
+
+    def raw_apply(self, *args, **kwargs):
+        _either_positional_or_keyword_args(*args, **kwargs)
+
+        return self._apply_pipeline(*args, raw=True) \
+            if len(args) > 0 \
+            else self._apply_selective(True, **kwargs)
 
     def __iter__(self):
         d = self.__dict__
@@ -392,6 +407,10 @@ apply a pipeline of functions to all items in this
 NamedCollection or apply functions to values based on keys
 specified in **kwargs. Values are not modified in-place. A new
 copy is returned. '''
+
+_nc.raw_apply.__dic__ = '''\
+Same as apply() but values of type NamedCollection are not
+processed recursively.'''
 
 _nc.__iter__.__doc__ = '''\
 Returns an iterator over the values stored in this
