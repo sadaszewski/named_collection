@@ -19,7 +19,7 @@ def _either_positional_or_keyword_args(*args, **kwargs):
 
 class NamedCollection(object):
     @staticmethod
-    def from_interleaved(*args):
+    def from_weave(*args):
         if len(args) % 2 != 0:
             raise ValueError('Even number of arguments is required')
         # args = list(args)
@@ -33,6 +33,10 @@ class NamedCollection(object):
             for a in args ]
         args = reduce(list.__add__, args)
         return NamedCollection(*args)
+
+    @staticmethod
+    def from_iter(it):
+        return NamedCollection(*it)
 
     def __init__(self, *args):
         d = self.__dict__
@@ -153,9 +157,9 @@ class NamedCollection(object):
     def __getattr__(self, attr):
         res = self._get_item_triples(attr)
         if len(res) == 0:
-            raise AttributeError
+            raise AttributeError(f'Attribute not found: {attr}')
         if len(res) != 1:
-            raise RuntimeError('Attribute returning multiple values should not happen')
+            raise RuntimeError(f'Attribute returning multiple values should not happen: {attr}')
         return res[0][2]
 
     def __setitem__(self, index, value):
@@ -286,17 +290,19 @@ class NamedCollection(object):
             res._update(a)
         return res
 
-    def _apply_pipeline(self, *args, raw=False):
+    def _apply_pipeline(self, *args, raw=False, items=False):
         d = self.__dict__
         item_values = d['item-values']
         item_keys = d['item-keys']
         res = []
         for i, val in enumerate(item_values):
             if not raw and isinstance(val, NamedCollection):
-                val = val._apply_pipeline(*args)
+                val = val._apply_pipeline(*args, raw=raw, items=items)
             else:
                 for fn in args:
-                    val = fn(val)
+                    val = fn(item_keys[i], val) \
+                        if items \
+                        else fn(val)
             res.append((item_keys[i], val))
         res = NamedCollection(*res)
         return res
@@ -305,6 +311,9 @@ class NamedCollection(object):
         raw = args[0] \
             if len(args) > 0 \
             else False
+        items = args[1] \
+            if len(args) > 1 \
+            else False
         d = self.__dict__
         item_values = d['item-values']
         item_keys = d['item-keys']
@@ -312,11 +321,13 @@ class NamedCollection(object):
         for i, val in enumerate(item_values):
             key = item_keys[i]
             if not raw and isinstance(val, NamedCollection):
-                val = val._apply_selective(**kwargs)
+                val = val._apply_selective(*args, **kwargs)
             else:
                 if key in kwargs:
                     fn = kwargs[key]
-                    val = fn(val)
+                    val = fn(key, val) \
+                        if items \
+                        else fn(val)
             res.append((key, val))
         res = NamedCollection(*res)
         return res
@@ -327,21 +338,46 @@ class NamedCollection(object):
         if len(args) > 0:
             return self._apply_pipeline(*args)
         else:
-            return self._apply_selective(**kwargs)
+            return self._apply_selective(False, False, **kwargs)
 
     def raw_apply(self, *args, **kwargs):
         _either_positional_or_keyword_args(*args, **kwargs)
 
         return self._apply_pipeline(*args, raw=True) \
             if len(args) > 0 \
-            else self._apply_selective(True, **kwargs)
+            else self._apply_selective(True, False, **kwargs)
+
+    def items_apply(self, *args, **kwargs):
+        _either_positional_or_keyword_args(*args, **kwargs)
+
+        return self._apply_pipeline(*args, items=True) \
+            if len(args) > 0 \
+            else self._apply_selective(False, True, **kwargs)
+
+    def items_raw_apply(self, *args, **kwargs):
+        _either_positional_or_keyword_args(*args, **kwargs)
+
+        return self._apply_pipeline(*args, items=True, raw=True) \
+            if len(args) > 0 \
+            else self._apply_selective(True, True, **kwargs)
 
     def __iter__(self):
         d = self.__dict__
         item_values = d['item-values']
         return iter(item_values)
 
+    def __dir__(self):
+        d = self.__dict__
+        item_keys = d['item-keys']
+        return item_keys
+
 nc = _nc = NamedCollection
+
+nc.from_interleaved = nc.from_weave
+from_weave = nc.from_weave
+from_interleaved = nc.from_interleaved
+from_dicts = nc.from_dicts
+from_iter = nc.from_iter
 
 #----------------------------------------------------------------
 
